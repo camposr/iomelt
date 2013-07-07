@@ -19,7 +19,7 @@ than currently available tools.
 	2. Keep code simple and well documented so that any can understand how it works
 
 * How does iomelt works?
-It runs a series of four sequential tests:
+It runs a series of five sequential tests:
 
 	1. Serial Write test
 	2. Serial Read test

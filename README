@@ -1,0 +1,94 @@
+IOMELT - Rodrigo Albani de Campos (camposr<at>gmail<dot>com)
+
+* What is iomelt?
+IOMELT is a benchmark tool for storage devices. 
+It is designed to be simple to use and understand.
+Currently it runs only on Linux and Mac OS X.
+
+* How do I build IOMELT?
+It should be simple as:
+
+	% make
+
+* Why build yet another benchmark tool?
+I needed something simpler, easier to understand and - more important -  easier to explain
+than currently available tools.
+
+* What are the main goals of this project?
+	1. Provide consistent and reproducible results
+	2. Keep code simple and well documented so that any can understand how it works
+
+* How does iomelt works?
+It runs a series of four sequential tests:
+
+	1. Serial Write test
+	2. Serial Read test
+	3. Random Rewrite test
+	4. Random Reread test
+	5. Random Mixed Read/Write test
+
+* What are the current options?
+As of November 2012, version 0.7 supports the following command line options:
+
+	-b BYTES	Block size used for IO functions (must be a power of two)
+	-d 		Dump data in a format that can be digested by pattern processing commands
+	-D 		Print time in seconds since epoch
+	-h 		Prints usage parameters
+	-H 		Omit header row when dumping data
+	-n 		Do NOT convert bytes to human readable format
+	-o 		Do NOT display results (does not override -d)
+	-O 		Reopen worload file before every test
+	-p PATH 	Directory where the test file should be created
+	-r 		Randomize workload file name
+	-R 		Try to enable Direct IO
+	-s BYTES	Workload file size (default: 10Mb)
+	-v 		Controls the level of verbosity
+	-V 		Displays version number
+
+Block size and File size (-b and -s options) are in bytes(default), Kilobytes ('K' suffix), Megabytes ('M' suffix), or Gigabytes ('G' suffix).
+Unless specified, block size value is the optimal block transfer size for the file system as returned by statvfs
+
+
+* How can I use it?
+Typically you can use it on the command line and it will output its results in a human
+readable format.
+You can configure it as a cron job and use the '-d' option so you can create time series charts or
+scatter plots with the results.
+
+* Why it only works on Linux and Mac OS X?
+Mostly because the system calls that try to disable buffer caching are not portable. 
+
+* I have an awesome idea and would like to help!
+Send me an e-mail at camposr<at>gmail<dot>com
+
+------- VERSION HISTORY ---------
+
+- 0.4
+	Added -p option to specify the path
+	Added the mixed read/write test
+	Simplified the random seed generator
+	Code cleanup
+	Check for return codes for read and write operations
+
+- 0.5
+	Added the parseFileSize function that parses the '-s' and '-b' command line options to allow the unit suffixes
+	Makefile now has a 'install' target
+- 0.5.1
+	Added a man page
+	Added a version number to the printHelp() output
+	Units may be specified in lower case characters
+	OS X support (port by Gleicon Moraes, thanks!)
+
+- 0.6 (August 2012)
+	Data dump now includes file and block size
+	Introduced the -H command line option
+
+- 0.7 (November 2012)
+	* The block size has no fixed value anymore, instead it uses statvfs() to retrieve the optimal value for the underlying file system.
+	* IOMelt now supports Direct IO (-R option).
+	* In order to support Direct IO (O_DIRECT) the buffer is created using posix_memalign() instead of malloc().
+	* There's a new option (-O) that will cause IOMelt to reopen the workload file before each test.
+	* All tests source code were moved to a file called io.c
+	* Diagnostic, error and debugging information are now printed using the myWarn() function defined in the verbose.c file.
+	* getUsage(), startUsage() and resetUsage() are not used anymore and were replaced for a much cleaner interface.
+	* All lseek() calls now are wrapped into a function called mySeek(), the seek position now is always a multiple of the block size.

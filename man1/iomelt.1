@@ -1,0 +1,83 @@
+.TH IOMELT 1 "AUGUST 2012" Linux "User Manuals"
+.SH NAME
+iomelt - a simple yet effective IO benchmark tool
+.SH SYNOPSIS
+.B iomelt [-dDhnoOrRv] [-b
+.I BYTES
+.B ] [-s
+.I BYTES
+.B ] [-p
+.I PATH
+.B ]
+.SH DESCRIPTION
+.B iomelt
+is a benchmark tool for storage devices.
+It is designed to be simple to use and to produce
+consistent and reproducible results. By default it
+creates a 10 Megabytes file using the optimal block
+size as returned by
+.B statvfs()
+and runs a series of 
+five different tests: serial write, serial read, 
+random rewrite, random read, mixed read/write.
+.SH OPTIONS
+.IP -d
+Dump data in a format that can be easily digested by
+pattern processing commands like awk.
+.IP -D
+Print time in seconds since epoch.
+.IP -h
+Prints usage parameters.
+.IP -H
+Omit header row when dumping data.
+.IP -n
+Do not convert bytes to a human readable format.
+.IP -o
+Do NOT display results (does not override -d)
+.IP -O
+Reopen workload file between tests.
+.IP -r
+Creates a random suffix to the test file (useful when
+testing clustered distributed file systems that use file
+name as a hash key).
+.IP -R
+Tries to minimize cache effects by using Direct IO. Please note
+that the underlying file system
+.B must
+support the O_DIRECT open() flag. The aligned buffer is created using
+.B posix_memalign().
+.IP -v
+Controls the level of verbosity.
+.IP -vv
+Even more verbose output.
+.IP -V
+Displays version number.
+.IP "-b BYTES"
+Block size used for read and write operations.
+Please note that unless specified, iomelt will try
+to use the optimal block size as returned by statvfs().
+Block size
+.B must
+be a power of two.
+.IP "-s BYTES"
+Test file size. K,M,G may be used as suffixes for Kilobytes, Megabytes and Gigabytes, respectively.
+.IP "-p PATH"
+Complete path to the directory where the test file should be created.
+.SH AUTHOR
+Written by Rodrigo Campos (camposr@gmail.com)
+.SH "SEE ALSO"
+.BR open (2),
+.BR statvfs (3),
+.BR posix_memalign (3),
+.BR posix_fadvise (2),
+.BR read (2),
+.BR write (2)
+.P
+Detailed documentation and latest version may be obtained at
+.B http://iomelt.com
+.SH BUGS
+The -v option must precede the -p option in order to display the debugging information for the
+.B chdir()
+operation.
+.P
+The unit conversion function will fail for large file sizes in 32 bit systems due to integer overflows.

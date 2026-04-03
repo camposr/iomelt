@@ -1,0 +1,82 @@
+4mIOMELT24m(1)			       User Manuals			    4mIOMELT24m(1)
+
+1mNAME0m
+     iomelt - a simple yet effective IO benchmark tool
+
+1mSYNOPSIS0m
+     1miomelt 22m[1m-dDfhHnoOrRvV22m] [1m-b 4m22mBYTES24m] [1m-s 4m22mBYTES24m] [1m-p 4m22mPATH24m]
+
+1mDESCRIPTION0m
+     1miomelt  22mis a benchmark tool for storage devices.  It is designed to be sim-
+     ple to use and to produce consistent and reproducible results.  By  default
+     it  creates  a 10 megabyte file using the optimal block size as returned by
+     1mstatvfs22m(3) and runs a series of five tests: serial write, serial read, ran-
+     dom rewrite, random read, and mixed read/write.
+
+1mOPTIONS0m
+     1m-b 4m22mBYTES0m
+	    Block size used for read and write	operations.   Unless  specified,
+	    iomelt  will  use  the optimal block size as returned by 1mstatvfs22m(3).
+	    Block size 1mmust 22mbe a power of two.  K, M, and G suffixes may be used
+	    for Kilobytes, Megabytes, and Gigabytes, respectively.
+
+     1m-d     22mDump data in a format that can be easily digested  by	pattern  pro-
+	    cessing  commands like 1mawk22m(1).  Output fields are separated by semi-
+	    colons: Date, Hostname, Test, File Size,  Block  Size,  Total  Time,
+	    Calls per second, Bytes per second.
+
+     1m-D     22mPrint the timestamp as seconds since the Unix epoch instead of a hu-
+	    man-readable date string.
+
+     1m-f     22mDisable 1mposix_fadvise22m(2) cache hints. By default, iomelt advises the
+	    kernel  to drop cached data between tests to reduce buffer cache in-
+	    terference.  This option disables that behaviour. Linux only.
+
+     1m-h     22mPrint usage information and exit.
+
+     1m-H     22mOmit the header row when dumping data with 1m-d22m.
+
+     1m-n     22mDo not convert byte counts to a  human-readable  format;  print  raw
+	    values instead.
+
+     1m-o     22mSuppress normal result output. Does not suppress the output produced
+	    by 1m-d22m.
+
+     1m-O     22mReopen the workload file before each test.
+
+     1m-p 4m22mPATH24mPath to the directory where the test file should be created.
+
+     1m-r     22mAppend  a  random  suffix to the test file name. Useful when testing
+	    clustered or distributed file systems that use the file  name  as  a
+	    hash key.
+
+     1m-R     22mTry  to minimise cache effects by enabling Direct IO. The underlying
+	    file system 1mmust 22msupport the 1mO_DIRECT 22mflag. The I/O buffer is  allo-
+	    cated  with 1mposix_memalign22m(3) to satisfy alignment requirements.  On
+	    macOS, 1mF_NOCACHE 22mis used instead.
+
+     1m-s 4m22mBYTES0m
+	    Test file size. Default is 10 megabytes.  K, M, and G  suffixes  may
+	    be	used for Kilobytes, Megabytes, and Gigabytes, respectively.  The
+	    file size must be greater than the block size.
+
+     1m-v     22mIncrease verbosity. May be specified multiple times (e.g. 1m-vvv22m)  for
+	    progressively more output.
+
+     1m-V     22mPrint the version number and exit.
+
+1mEXIT STATUS0m
+     1miomelt 22mexits 0 on success and non-zero if an error occurs.
+
+1mAUTHOR0m
+     Written by Rodrigo Campos (camposr@gmail.com)
+
+1mSEE ALSO0m
+     1mopen22m(2),   1mread22m(2),   1mwrite22m(2),   1mlseek22m(2),  1mposix_fadvise22m(2),  1mstatvfs22m(3),
+     1mposix_memalign22m(3)
+
+1mBUGS0m
+     The 1m-v 22moption must precede the 1m-p 22moption on the command line in	order  for
+     the verbosity setting to take effect during the 1mchdir22m(2) operation.
+
+Version 1.0			   APRIL 2026			       4mIOMELT24m(1)

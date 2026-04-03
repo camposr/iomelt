@@ -1,0 +1,112 @@
+.TH IOMELT 1 "APRIL 2026" "Version 1.0" "User Manuals"
+.SH NAME
+iomelt - a simple yet effective IO benchmark tool
+.SH SYNOPSIS
+.B iomelt
+[\fB-dDfhHnoOrRvV\fR]
+[\fB-b\fR \fIBYTES\fR]
+[\fB-s\fR \fIBYTES\fR]
+[\fB-p\fR \fIPATH\fR]
+.SH DESCRIPTION
+.B iomelt
+is a benchmark tool for storage devices.
+It is designed to be simple to use and to produce
+consistent and reproducible results. By default it
+creates a 10 megabyte file using the optimal block
+size as returned by
+.BR statvfs (3)
+and runs a series of five tests: serial write, serial read,
+random rewrite, random read, and mixed read/write.
+.SH OPTIONS
+.IP \fB-b\fR\ \fIBYTES\fR
+Block size used for read and write operations.
+Unless specified, iomelt will use the optimal block size
+as returned by
+.BR statvfs (3).
+Block size
+.B must
+be a power of two.
+K, M, and G suffixes may be used for Kilobytes, Megabytes,
+and Gigabytes, respectively.
+.IP \fB-d\fR
+Dump data in a format that can be easily digested by
+pattern processing commands like
+.BR awk (1).
+Output fields are separated by semicolons:
+Date, Hostname, Test, File Size, Block Size, Total Time,
+Calls per second, Bytes per second.
+.IP \fB-D\fR
+Print the timestamp as seconds since the Unix epoch instead of
+a human-readable date string.
+.IP \fB-f\fR
+Disable
+.BR posix_fadvise (2)
+cache hints. By default, iomelt advises the kernel to drop
+cached data between tests to reduce buffer cache interference.
+This option disables that behaviour. Linux only.
+.IP \fB-h\fR
+Print usage information and exit.
+.IP \fB-H\fR
+Omit the header row when dumping data with
+.BR -d .
+.IP \fB-n\fR
+Do not convert byte counts to a human-readable format;
+print raw values instead.
+.IP \fB-o\fR
+Suppress normal result output. Does not suppress the output
+produced by
+.BR -d .
+.IP \fB-O\fR
+Reopen the workload file before each test.
+.IP \fB-p\fR\ \fIPATH\fR
+Path to the directory where the test file should be created.
+.IP \fB-r\fR
+Append a random suffix to the test file name. Useful when
+testing clustered or distributed file systems that use the
+file name as a hash key.
+.IP \fB-R\fR
+Try to minimise cache effects by enabling Direct IO. The
+underlying file system
+.B must
+support the
+.B O_DIRECT
+flag. The I/O buffer is allocated with
+.BR posix_memalign (3)
+to satisfy alignment requirements.
+On macOS,
+.B F_NOCACHE
+is used instead.
+.IP \fB-s\fR\ \fIBYTES\fR
+Test file size. Default is 10 megabytes.
+K, M, and G suffixes may be used for Kilobytes, Megabytes,
+and Gigabytes, respectively.
+The file size must be greater than the block size.
+.IP \fB-v\fR
+Increase verbosity. May be specified multiple times
+(e.g.\&
+.BR -vvv )
+for progressively more output.
+.IP \fB-V\fR
+Print the version number and exit.
+.SH "EXIT STATUS"
+.B iomelt
+exits 0 on success and non-zero if an error occurs.
+.SH AUTHOR
+Written by Rodrigo Campos (camposr@gmail.com)
+.SH "SEE ALSO"
+.BR open (2),
+.BR read (2),
+.BR write (2),
+.BR lseek (2),
+.BR posix_fadvise (2),
+.BR statvfs (3),
+.BR posix_memalign (3)
+.SH BUGS
+The
+.B -v
+option must precede the
+.B -p
+option on the command line in order for the verbosity setting
+to take effect during the
+.BR chdir (2)
+operation.

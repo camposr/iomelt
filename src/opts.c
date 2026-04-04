@@ -96,6 +96,7 @@ void printHelp(void)
 		{ 's', "Workload file size (default: 10Mb)", "BYTES" },
 		{ 'v', "Controls the level of verbosity", NULL},
 		{ 'V', "Displays version number", NULL},
+      { 'x', "Dry-run. Just display parameters and quit", NULL },
 		{ 0 }
 	};
 
@@ -157,9 +158,10 @@ unsigned long int roundUpFileSize(const unsigned long int fileSize, const unsign
 
 }
 
-int isPowerOfTwo(unsigned int x)
+int isPowerOfTwo(int x)
 {
 	/* check if number is a power of two */
+	myWarn(3, __func__, "Checking if block size is a power of two: %d", x);
 	return ((x != 0) && ((x & (~x+1)) == x));
 }
 

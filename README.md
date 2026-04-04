@@ -34,7 +34,7 @@ It runs a series of five sequential tests:
 	5. Random Mixed Read/Write test
 
 * What are the current options?
-As of April 2026, version 1.0 supports the following command line options:
+As of April 2026, version 1.2 supports the following command line options:
 
 	-b BYTES	Block size used for IO functions (must be a power of two)
 	-d		Dump data in a format that can be digested by pattern processing commands
@@ -139,3 +139,8 @@ Send me an e-mail at camposr<at>gmail<dot>com
 
 - 1.1 (April 2026)
 	Added a fsync() call after the write operations loop
+
+- 1.2 (April 2026)
+	Added per-operation IO latency measurement (min/avg/max) to all benchmark tests
+	Added drive information detection (device, model, vendor, type, filesystem)
+	Fixed unused variable warning for posix_fadvise hint flag

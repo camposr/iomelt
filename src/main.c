@@ -24,7 +24,7 @@
 /* macro definitions and function prototypes are in this file */
 #include "iomelt.h"
 
-const char *versionNumber = "1.1";
+const char *versionNumber = "1.2";
 
 /* a flag that will control the conversion of bytes in output */
 /* this is enabled by default */

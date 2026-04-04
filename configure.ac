@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([iomelt], [1.0], [camposr@gmail.com])
+AC_INIT([iomelt], [1.2], [camposr@gmail.com])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 
 AC_PROG_CC

@@ -577,6 +577,10 @@ int main(int argc, char **argv)
 		perror("Unable to unlink workload file");
 		exit(EXIT_FAILURE);
 	}
+   else
+   {
+      myWarn(3, __func__, "Successfully removed workload file %s", fileName);
+   }
 
 return(0);
 }

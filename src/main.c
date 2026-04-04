@@ -78,6 +78,8 @@ int main(int argc, char **argv)
 	char hostName[256];
 	/* a simple buffer for the stat() */
 	struct stat st;
+   /* is this a dry-run? */
+   bool isDryRun = false;
 
 
 
@@ -97,7 +99,7 @@ int main(int argc, char **argv)
 	srandom((unsigned int)(time(NULL)/getpid()));
 
 	/* parse command line options */
-	while ((rc = getopt(argc, argv, "fdDvVhHnoOrRs:b:p:")) != -1)
+	while ((rc = getopt(argc, argv, "fdDvVhHnoOrRxs:b:p:")) != -1)
 	{
 		switch(rc)
 		{
@@ -132,9 +134,8 @@ int main(int argc, char **argv)
 				}
 				if (!isPowerOfTwo(blockSize))
 				{
-					myWarn(0,__func__,"Block size must be a power of two");
-					printHelp();
-					exit(EXIT_FAILURE);
+					myWarn(0,__func__,"Block size must be a power of two, reverting to %d", BLOCKSIZE);
+				blockSize = BLOCKSIZE;
 				}
 				break;
 			case 'n':
@@ -188,11 +189,17 @@ int main(int argc, char **argv)
 			case 'H':
 				showHeader = false;
 				break;
+			case 'x':
+				isDryRun = true;
+				myWarn(2,__func__,"Dry-run flag set. Files will be opened but almost no operations will happen");
+				break;
 			default:
 				printHelp();
 				exit(EXIT_FAILURE);
 		}
 	}
+
+	myWarn(2,__func__,"Verbose level is %d", verbose);
 
 	/* 	if the user didn't specify a block size iomelt will try to figure out the
 		optimal block size for the file system by using statfs */
@@ -201,7 +208,7 @@ int main(int argc, char **argv)
 		blockSize = getBlockSize();
 		if (blockSize == -1)
 		{
-			myWarn(1,__func__,"Unable to get optimal block size, using %s",BLOCKSIZE);
+			myWarn(1,__func__,"Unable to get optimal block size, using %d",BLOCKSIZE);
 			blockSize = BLOCKSIZE;
 		}
 		else
@@ -296,13 +303,15 @@ int main(int argc, char **argv)
 	(void)memset(buf, 0, blockSize);
 
 	if (output == true)
-		printf("Serial write test - File size: %s - Block size: %d\n", fileSizeHuman, blockSize);
+		printf("Serial write test - File size: %s - Block size: %d%s\n",
+			fileSizeHuman, blockSize, isDryRun ? " (dry run - skipped)" : "");
 	/************************/
 	/*     Serial Write     */
 	/************************/
-	metrics[0] = serialWrite(fd,fileSize,blockSize,buf);
+   if (isDryRun == false)
+	   metrics[0] = serialWrite(fd,fileSize,blockSize,buf);
 
-	if (output == true) 
+	if (output == true && isDryRun == false) 
 	{
 		printf("Serial write test finished\n");
 		printf("write() calls: %ld\n",fileSize/blockSize);
@@ -310,6 +319,10 @@ int main(int argc, char **argv)
 		printf("write() calls per second: %f\n", metrics[0].totalCalls / metrics[0].wallClockTime);
 		bytesToHuman(humanBytes, (fileSize / metrics[0].wallClockTime));
 		printf("write() bytes per second: %s\n", humanBytes );
+		printf("Latency (us):   min=%.2f  avg=%.2f  max=%.2f\n",
+			metrics[0].minLatency * 1e6,
+			metrics[0].avgLatency * 1e6,
+			metrics[0].maxLatency * 1e6);
 		if (verbose > 0)
 		{
 			printf("Blocks in/out: %ld/%ld\n",metrics[0].blocksIn, metrics[0].blocksOut);
@@ -351,14 +364,17 @@ int main(int argc, char **argv)
 
 	
 	if (output == true)
-		printf("\nSerial read test - File size: %s - Block size: %d\n", fileSizeHuman, blockSize);
+		printf("\nSerial read test - File size: %s - Block size: %d%s\n",
+			fileSizeHuman, blockSize, isDryRun ? " (dry run - skipped)" : "");
 		
 	/************************/
 	/*    Serial Read       */
 	/************************/
-	metrics[1] = serialRead(fd, fileSize, blockSize, buf);
 
-	if (output == true)
+   if (isDryRun == false)
+	   metrics[1] = serialRead(fd, fileSize, blockSize, buf);
+
+	if (output == true && isDryRun == false)
 	{
 	
 		printf("Serial read test finished\n");
@@ -367,6 +383,10 @@ int main(int argc, char **argv)
 		printf("read() calls per second: %f\n", metrics[1].totalCalls / metrics[1].wallClockTime);
 		bytesToHuman(humanBytes, (fileSize / metrics[1].wallClockTime));
 		printf("read() bytes per second: %s\n", humanBytes);
+		printf("Latency (us):   min=%.2f  avg=%.2f  max=%.2f\n",
+			metrics[1].minLatency * 1e6,
+			metrics[1].avgLatency * 1e6,
+			metrics[1].maxLatency * 1e6);
 		if (verbose > 0)
 		{
 			printf("Blocks in/out: %ld/%ld\n",metrics[1].blocksIn, metrics[1].blocksOut);
@@ -377,15 +397,17 @@ int main(int argc, char **argv)
 	if (reopen == true)
 			fd = myOpen(fileName, directIO);
 	if (output == true)
-		printf("\nRandom rewrite test - File size: %s - Block size: %d\n", fileSizeHuman, blockSize);
+		printf("\nRandom rewrite test - File size: %s - Block size: %d%s\n",
+			fileSizeHuman, blockSize, isDryRun ? " (dry run - skipped)" : "");
 	memset(buf,1,blockSize);
 
 	/************************/
 	/*   Random Rewrite     */
 	/************************/
-	metrics[2] = randomRewrite(fd, fileSize, blockSize, buf);
+   if (isDryRun == false)
+	   metrics[2] = randomRewrite(fd, fileSize, blockSize, buf);
 
-	if (output == true)
+	if (output == true && isDryRun == false)
 	{
 		printf("Random rewrite test finished\n");
 		printf("write() calls: %d\n",metrics[2].totalCalls);
@@ -393,6 +415,10 @@ int main(int argc, char **argv)
 		printf("write() calls per second: %f\n", metrics[2].totalCalls / metrics[2].wallClockTime);
 		bytesToHuman(humanBytes, (fileSize / metrics[2].wallClockTime));
 		printf("write() bytes per second: %s\n", humanBytes );
+		printf("Latency (us):   min=%.2f  avg=%.2f  max=%.2f\n",
+			metrics[2].minLatency * 1e6,
+			metrics[2].avgLatency * 1e6,
+			metrics[2].maxLatency * 1e6);
 		if (verbose > 0)
 		{
 			printf("Blocks in/out: %ld/%ld\n",metrics[2].blocksIn, metrics[2].blocksOut);
@@ -404,7 +430,8 @@ int main(int argc, char **argv)
 	if (reopen == true)
 		fd = myOpen(fileName, directIO);
 	if (output == true)
-		printf("\nRandom reread test - File size: %s - Block size: %d\n", fileSizeHuman, blockSize);
+		printf("\nRandom reread test - File size: %s - Block size: %d%s\n",
+			fileSizeHuman, blockSize, isDryRun ? " (dry run - skipped)" : "");
 	#ifndef __APPLE__
 	if (fadvise == true)
 	{
@@ -423,9 +450,11 @@ int main(int argc, char **argv)
 	/*   Random Reread     */
 	/************************/
 
-	metrics[3] = randomReread(fd,fileSize,blockSize,buf);
 
-	if (output == true)
+   if (isDryRun == false)
+	   metrics[3] = randomReread(fd,fileSize,blockSize,buf);
+
+	if (output == true && isDryRun == false)
 	{
 		printf("Random read test finished\n");
 		printf("read() calls: %d\n",metrics[3].totalCalls);
@@ -433,6 +462,10 @@ int main(int argc, char **argv)
 		printf("read() calls per second: %f\n", metrics[3].totalCalls / metrics[3].wallClockTime);
 		bytesToHuman(humanBytes, (fileSize / metrics[3].wallClockTime));
 		printf("read() bytes per second: %s\n", humanBytes);
+		printf("Latency (us):   min=%.2f  avg=%.2f  max=%.2f\n",
+			metrics[3].minLatency * 1e6,
+			metrics[3].avgLatency * 1e6,
+			metrics[3].maxLatency * 1e6);
 		if (verbose > 0)
 		{
 			printf("Blocks in/out: %ld/%ld\n",metrics[3].blocksIn, metrics[3].blocksOut);
@@ -443,7 +476,8 @@ int main(int argc, char **argv)
 	if (reopen == true)
 		fd = myOpen(fileName, directIO);
 	if (output == true)
-		printf("\nRandom mixed read/write test - File size: %s - Block size: %d\n", fileSizeHuman, blockSize);
+		printf("\nRandom mixed read/write test - File size: %s - Block size: %d%s\n",
+			fileSizeHuman, blockSize, isDryRun ? " (dry run - skipped)" : "");
 	//srandom((unsigned int)(tm + getpid()));
 	#ifndef __APPLE__
 	if (fadvise == true)
@@ -464,8 +498,9 @@ int main(int argc, char **argv)
 	/************************/
 	/*   Random Mixed       */
 	/************************/
-	metrics[4] = randomMixed(fd, fileSize, blockSize, buf);
-	if (output == true)
+   if (isDryRun == false)
+	   metrics[4] = randomMixed(fd, fileSize, blockSize, buf);
+	if (output == true && isDryRun == false)
 	{
 		printf("Random read/write test finished\n");
 		printf("read()/write() calls: %d\n",metrics[4].totalCalls);
@@ -473,6 +508,10 @@ int main(int argc, char **argv)
 		printf("read()/write() calls per second: %f\n", metrics[4].totalCalls/ metrics[4].wallClockTime);
 		bytesToHuman(humanBytes, (fileSize / metrics[4].wallClockTime));
 		printf("read()/write() bytes per second: %s\n", humanBytes);
+		printf("Latency (us):   min=%.2f  avg=%.2f  max=%.2f\n",
+			metrics[4].minLatency * 1e6,
+			metrics[4].avgLatency * 1e6,
+			metrics[4].maxLatency * 1e6);
 		if (verbose > 0)
 		{
 			printf("Blocks in/out: %ld/%ld\n",metrics[4].blocksIn, metrics[4].blocksOut);
@@ -484,14 +523,21 @@ int main(int argc, char **argv)
 
 	/* Dump detailed metrics of program execution */
 
-	totalUsage = getTotalUsage(metrics);
-
-	if (output == true)
+	if (isDryRun == false)
 	{
-		printf("\n\nFinished all tests\n");
-		printf("Total wallclock time: %f\n", totalUsage.wallClockTime);
-		printf("Blocks in/out: %ld/%ld\n", totalUsage.blocksIn, totalUsage.blocksOut);
-		printf("CPU user/system time: %f/%f\n", totalUsage.userTime, totalUsage.systemTime);
+		totalUsage = getTotalUsage(metrics);
+
+		if (output == true)
+		{
+			printf("\n\nFinished all tests\n");
+			printf("Total wallclock time: %f\n", totalUsage.wallClockTime);
+			printf("Blocks in/out: %ld/%ld\n", totalUsage.blocksIn, totalUsage.blocksOut);
+			printf("CPU user/system time: %f/%f\n", totalUsage.userTime, totalUsage.systemTime);
+			printf("Overall latency (us): min=%.2f  avg=%.2f  max=%.2f\n",
+				totalUsage.minLatency * 1e6,
+				totalUsage.avgLatency * 1e6,
+				totalUsage.maxLatency * 1e6);
+		}
 	}
 
 
@@ -506,7 +552,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Dump data in a format that can be digested by R and awk */
-	if (dump == true)
+	if (dump == true && isDryRun == false)
 	{
 		if (showHeader == true)
 			printf("#Date;Hostname;Test;File Size;Block Size;Total Time;Calls per second;Bytes per second\n");

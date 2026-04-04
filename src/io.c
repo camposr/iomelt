@@ -69,7 +69,8 @@ ioMetrics serialWrite(int fd, unsigned long int fileSize, int blockSize, char *b
 {
 	int i = 0;
 	int rc = 0;
-	double t;
+	double t, opStart, opLatency;
+	double minLat = DBL_MAX, maxLat = 0.0, sumLat = 0.0;
 	struct rusage initUsage;
 	ioMetrics metrics;
 
@@ -84,23 +85,33 @@ ioMetrics serialWrite(int fd, unsigned long int fileSize, int blockSize, char *b
 
 	for(i=0; i < (int)(fileSize / blockSize); i++)
 	{
+		opStart = getTime();
 		rc = write(fd, buf, blockSize);
+		opLatency = getDelta(opStart);
+
 		if (rc != blockSize)
 		{
 			myWarn(0, __func__, "Unable to write: %s", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
+
+		if (opLatency < minLat) minLat = opLatency;
+		if (opLatency > maxLat) maxLat = opLatency;
+		sumLat += opLatency;
 	}
 	rc = fsync(fd);
 	if (rc == -1)
 	{
 		myWarn(0, __func__, "Unable to fsync(): %s", strerror(errno));
 	}
-	
+
 	metrics.wallClockTime = getDelta(t);
 	getDeltaUsage(initUsage, &metrics);
 
 	metrics.totalCalls = i;
+	metrics.minLatency = minLat;
+	metrics.maxLatency = maxLat;
+	metrics.avgLatency = (i > 0) ? sumLat / i : 0.0;
 	snprintf(metrics.testName, sizeof(metrics.testName), "Serial Write");
 
 	return(metrics);
@@ -110,7 +121,8 @@ ioMetrics serialRead(int fd, unsigned long int fileSize, int blockSize, char *bu
 {
 	int i = 0;
 	int rc = 0;
-	double t;
+	double t, opStart, opLatency;
+	double minLat = DBL_MAX, maxLat = 0.0, sumLat = 0.0;
 	struct rusage initUsage;
 	ioMetrics metrics;
 
@@ -121,19 +133,31 @@ ioMetrics serialRead(int fd, unsigned long int fileSize, int blockSize, char *bu
 		myWarn(0, __func__, "Unable to call getrusage(): %s", strerror(errno));
 	}
 
+	opStart = getTime();
 	while ((rc = read(fd, buf, blockSize)) != 0)
 	{
+		opLatency = getDelta(opStart);
+
 		if (rc != blockSize)
 		{
 			myWarn(0, __func__, "Unable to read: %s", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
+
+		if (opLatency < minLat) minLat = opLatency;
+		if (opLatency > maxLat) maxLat = opLatency;
+		sumLat += opLatency;
 		i++;
+
+		opStart = getTime();
 	}
 	metrics.wallClockTime = getDelta(t);
 	getDeltaUsage(initUsage, &metrics);
 
 	metrics.totalCalls = i;
+	metrics.minLatency = minLat;
+	metrics.maxLatency = maxLat;
+	metrics.avgLatency = (i > 0) ? sumLat / i : 0.0;
 	snprintf(metrics.testName, sizeof(metrics.testName), "Serial Read");
 
 	return(metrics);
@@ -143,7 +167,8 @@ ioMetrics randomRewrite(int fd, unsigned long int fileSize, int blockSize, char 
 {
 	int i = 0;
 	int rc = 0;
-	double t;
+	double t, opStart, opLatency;
+	double minLat = DBL_MAX, maxLat = 0.0, sumLat = 0.0;
 	struct rusage initUsage;
 	ioMetrics metrics;
 
@@ -163,18 +188,28 @@ ioMetrics randomRewrite(int fd, unsigned long int fileSize, int blockSize, char 
 			exit(EXIT_FAILURE);
 		}
 
+		opStart = getTime();
 		rc = write(fd, buf, blockSize);
+		opLatency = getDelta(opStart);
+
 		if (rc != blockSize)
 		{
 			myWarn(0, __func__, "write() returned %d", rc);
 			perror("Random Rewrite - Unable to write");
 			exit(EXIT_FAILURE);
 		}
+
+		if (opLatency < minLat) minLat = opLatency;
+		if (opLatency > maxLat) maxLat = opLatency;
+		sumLat += opLatency;
 	}
 	metrics.wallClockTime = getDelta(t);
 	getDeltaUsage(initUsage, &metrics);
 
 	metrics.totalCalls = i;
+	metrics.minLatency = minLat;
+	metrics.maxLatency = maxLat;
+	metrics.avgLatency = (i > 0) ? sumLat / i : 0.0;
 	snprintf(metrics.testName, sizeof(metrics.testName), "Random Rewrite");
 
 	return(metrics);
@@ -184,7 +219,8 @@ ioMetrics randomReread(int fd, unsigned long int fileSize, int blockSize, char *
 {
 	int i = 0;
 	int rc = 0;
-	double t;
+	double t, opStart, opLatency;
+	double minLat = DBL_MAX, maxLat = 0.0, sumLat = 0.0;
 	struct rusage initUsage;
 	ioMetrics metrics;
 
@@ -204,17 +240,27 @@ ioMetrics randomReread(int fd, unsigned long int fileSize, int blockSize, char *
 			exit(EXIT_FAILURE);
 		}
 
+		opStart = getTime();
 		rc = read(fd, buf, blockSize);
+		opLatency = getDelta(opStart);
+
 		if (rc != blockSize)
 		{
 			myWarn(0, __func__, "Unable to read: %s", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
+
+		if (opLatency < minLat) minLat = opLatency;
+		if (opLatency > maxLat) maxLat = opLatency;
+		sumLat += opLatency;
 	}
 	metrics.wallClockTime = getDelta(t);
 	getDeltaUsage(initUsage, &metrics);
 
 	metrics.totalCalls = i;
+	metrics.minLatency = minLat;
+	metrics.maxLatency = maxLat;
+	metrics.avgLatency = (i > 0) ? sumLat / i : 0.0;
 	snprintf(metrics.testName, sizeof(metrics.testName), "Random Reread");
 
 	return(metrics);
@@ -225,7 +271,8 @@ ioMetrics randomMixed(int fd, unsigned long int fileSize, int blockSize, char *b
 {
 	int i = 0;
 	int rc = 0;
-	double t;
+	double t, opStart, opLatency;
+	double minLat = DBL_MAX, maxLat = 0.0, sumLat = 0.0;
 	struct rusage initUsage;
 	ioMetrics metrics;
 
@@ -244,10 +291,13 @@ ioMetrics randomMixed(int fd, unsigned long int fileSize, int blockSize, char *b
 			myWarn(0, __func__, "lseek failed: %s", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
+
+		opStart = getTime();
 		if (((int)random() % 2) == 0)
 		{
 			/* read */
 			rc = read(fd, buf, blockSize);
+			opLatency = getDelta(opStart);
 			if (rc != blockSize)
 			{
 				myWarn(0, __func__, "Unable to read: %s", strerror(errno));
@@ -258,18 +308,26 @@ ioMetrics randomMixed(int fd, unsigned long int fileSize, int blockSize, char *b
 		{
 			/* write */
 			rc = write(fd, buf, blockSize);
+			opLatency = getDelta(opStart);
 			if (rc != blockSize)
 			{
 				myWarn(0, __func__, "Unable to write: %s", strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 		}
+
+		if (opLatency < minLat) minLat = opLatency;
+		if (opLatency > maxLat) maxLat = opLatency;
+		sumLat += opLatency;
 	}
 
 	metrics.wallClockTime = getDelta(t);
 	getDeltaUsage(initUsage, &metrics);
 
 	metrics.totalCalls = i;
+	metrics.minLatency = minLat;
+	metrics.maxLatency = maxLat;
+	metrics.avgLatency = (i > 0) ? sumLat / i : 0.0;
 	snprintf(metrics.testName, sizeof(metrics.testName), "Random Mixed");
 
 	return(metrics);

@@ -44,8 +44,10 @@ ioMetrics getTotalUsage(ioMetrics *metrics)
 {
 	ioMetrics sum;
 	int i;
+	double weightedLatSum = 0.0;
 
 	memset(&sum, 0, sizeof(ioMetrics));
+	sum.minLatency = DBL_MAX;
 
 	for(i = 0; i < NUM_TESTS; i++)
 	{
@@ -55,6 +57,18 @@ ioMetrics getTotalUsage(ioMetrics *metrics)
 		sum.systemTime    += metrics[i].systemTime;
 		sum.wallClockTime += metrics[i].wallClockTime;
 		sum.totalCalls    += metrics[i].totalCalls;
+
+		if (metrics[i].minLatency < sum.minLatency)
+			sum.minLatency = metrics[i].minLatency;
+		if (metrics[i].maxLatency > sum.maxLatency)
+			sum.maxLatency = metrics[i].maxLatency;
+
+		/* weighted average: each test contributes avg * its call count */
+		weightedLatSum += metrics[i].avgLatency * metrics[i].totalCalls;
 	}
+
+	sum.avgLatency = (sum.totalCalls > 0) ?
+	                 weightedLatSum / sum.totalCalls : 0.0;
+
 	return(sum);
 }

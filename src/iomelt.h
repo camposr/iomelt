@@ -35,6 +35,7 @@
 #include <features.h>
 #endif
 #include <stdarg.h> /* for variable argument lists */
+#include <float.h>  /* for DBL_MAX */
 #include <errno.h>
 #include <sys/statvfs.h>
 #include <ctype.h>
@@ -56,6 +57,9 @@ typedef struct {
 	double wallClockTime;
 	double userTime;
 	double systemTime;
+	double minLatency;  /* fastest single operation (seconds) */
+	double maxLatency;  /* slowest single operation (seconds) */
+	double avgLatency;  /* mean per-operation latency (seconds) */
 } ioMetrics;
 
 
@@ -71,7 +75,7 @@ unsigned long int parseFileSize(char *);
 void myWarn(short int, const char *, const char *, ...);
 int myOpen(const char *, const bool);
 unsigned long int roundUpFileSize(const unsigned long int, const unsigned int);
-int isPowerOfTwo(unsigned int);
+int isPowerOfTwo(int);
 unsigned int getBlockSize(void);
 off_t myRandomSeek(int, unsigned long, int);
 ioMetrics serialWrite(int,unsigned long, int, char *);

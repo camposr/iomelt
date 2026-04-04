@@ -208,6 +208,33 @@ int main(int argc, char **argv)
 			myWarn(2,__func__,"Block size is %d",blockSize);
 	}
 
+	/* Print drive info when verbosity is enabled */
+	if (verbose >= 1)
+	{
+		driveInfo drive;
+		if (getDriveInfo(".", &drive) == 0)
+		{
+			printf("Device:  %s\n", drive.device);
+			printf("FS type: %s\n", drive.fstype);
+			if (drive.is_remote)
+			{
+				printf("Type:    %s (remote filesystem)\n", drive.type);
+				printf("Note:    drive hardware info not available for remote filesystems\n");
+			}
+			else
+			{
+				printf("Model:   %s\n", drive.model[0]  ? drive.model  : "Unknown");
+				printf("Vendor:  %s\n", drive.vendor[0] ? drive.vendor : "Unknown");
+				printf("Type:    %s\n", drive.type);
+			}
+			printf("\n");
+		}
+		else
+		{
+			printf("Device:  Unknown (unable to query drive info)\n\n");
+		}
+	}
+
 	/* Convert file size to a human readable format */
 	bytesToHuman(fileSizeHuman, fileSize);
 

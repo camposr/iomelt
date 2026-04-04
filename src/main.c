@@ -62,7 +62,9 @@ int main(int argc, char **argv)
 	char fileSizeHuman[256];
 	bool randomFileName = false;
 	bool directIO = false;
-	bool fadvise = true;
+   #ifndef __APPLE__
+	   bool fadvise = true;
+   #endif
 	/* should the workload file be reopened before each test */
 	bool reopen = false;
 	/* dump controls the print of machine formated data at the end */
@@ -113,7 +115,9 @@ int main(int argc, char **argv)
 				sprintf(humanTime, "%d", (int)tm);
 				break;
 			case 'f':
+         #ifndef __APPLE__
 				fadvise = false;
+         #endif
 				break;
 			case 's':
 				fileSize = parseFileSize(optarg);
@@ -577,6 +581,10 @@ int main(int argc, char **argv)
 		perror("Unable to unlink workload file");
 		exit(EXIT_FAILURE);
 	}
+   else
+   {
+      myWarn(3, __func__, "Successfully removed workload file %s", fileName);
+   }
 
 return(0);
 }

@@ -559,15 +559,18 @@ int main(int argc, char **argv)
 	if (dump == true && isDryRun == false)
 	{
 		if (showHeader == true)
-			printf("#Date;Hostname;Test;File Size;Block Size;Total Time;Calls per second;Bytes per second\n");
+			printf("#Date;Hostname;Test;File Size;Block Size;Total Time;Calls per second;Bytes per second;Min Latency;Avg Latency;Max Latency\n");
 
 		for (i=0;i<NUM_TESTS;i++)
 		{
-			printf("%s;%s;%s;%lu;%d;%f;%f;%f\n", 
+			printf("%s;%s;%s;%lu;%d;%f;%f;%f;%.2f;%.2f;%.2f\n", 
 				humanTime, hostName, metrics[i].testName, 
 				fileSize, blockSize, metrics[i].wallClockTime,
 				(fileSize / blockSize) / metrics[i].wallClockTime,
-				fileSize / metrics[i].wallClockTime );
+				fileSize / metrics[i].wallClockTime, 
+            metrics[i].minLatency * 1e6, 
+            metrics[i].avgLatency * 1e6,
+            metrics[i].maxLatency * 1e6);
 		}
 	}
 

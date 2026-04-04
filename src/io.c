@@ -24,7 +24,7 @@ int myOpen(const char *fileName, const bool directIO)
 
 	if (directIO == true)
 	{
-		myWarn(3, __func__, "Will try to enable Direct IO");
+		myWarn(3, __func__, "Setting the flag for Direct IO");
 #ifdef O_DIRECT
 		flags |= O_DIRECT;
 #endif

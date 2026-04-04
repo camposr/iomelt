@@ -7,4 +7,5 @@ iomelt_SOURCES = \
 	verbose.c \
 	io.c \
 	time.c \
+	drive.c \
 	iomelt.h

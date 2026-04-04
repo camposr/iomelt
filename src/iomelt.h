@@ -37,6 +37,16 @@
 #include <stdarg.h> /* for variable argument lists */
 #include <errno.h>
 #include <sys/statvfs.h>
+#include <ctype.h>
+
+typedef struct {
+	char device[256];  /* e.g. /dev/nvme0n1 or server:/export */
+	char model[256];   /* drive model, or "Remote filesystem"  */
+	char vendor[256];  /* manufacturer                         */
+	char type[32];     /* "HDD", "SSD", "NVMe", "nfs", etc.   */
+	char fstype[64];   /* raw filesystem type from the OS      */
+	int  is_remote;    /* 1 if network filesystem              */
+} driveInfo;
 
 typedef struct {
 	char testName[128];
@@ -71,3 +81,4 @@ ioMetrics randomReread(int,unsigned long, int, char *);
 ioMetrics randomMixed(int,unsigned long int, int, char *);
 void getDeltaUsage(const struct rusage, ioMetrics *);
 ioMetrics getTotalUsage(ioMetrics *);
+int getDriveInfo(const char *, driveInfo *);

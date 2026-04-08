@@ -46,6 +46,10 @@ cached data between tests to reduce buffer cache interference.
 This option disables that behaviour. Linux only.
 .IP \fB-h\fR
 Print usage information and exit.
+.IP \fB-k\fR
+Keep the workload file on exit instead of removing it.
+Useful for inspecting the file after a run or for pre-seeding
+subsequent runs on the same path.
 .IP \fB-H\fR
 Omit the header row when dumping data with
 .BR -d .
@@ -65,17 +69,35 @@ Append a random suffix to the test file name. Useful when
 testing clustered or distributed file systems that use the
 file name as a hash key.
 .IP \fB-R\fR
-Try to minimise cache effects by enabling Direct IO. The
+Disable Direct IO. By default, iomelt enables Direct IO to bypass
+the page cache and measure true device-level performance. The
 underlying file system
 .B must
 support the
 .B O_DIRECT
-flag. The I/O buffer is allocated with
+flag, and the I/O buffer is allocated with
 .BR posix_memalign (3)
 to satisfy alignment requirements.
 On macOS,
 .B F_NOCACHE
 is used instead.
+Use this flag to fall back to buffered IO, for example on file systems
+that do not support
+.BR O_DIRECT .
+.IP \fB-w\fR\ \fIFILE\fR
+Append CSV output to
+.I FILE
+instead of writing it to standard output.
+Implies
+.BR -d .
+If
+.I FILE
+already exists and contains data the header row is suppressed automatically,
+making it safe to call from a cron job without
+.BR -H .
+If
+.I FILE
+cannot be opened for writing iomelt logs an error and exits.
 .IP \fB-s\fR\ \fIBYTES\fR
 Test file size. Default is 10 megabytes.
 K, M, and G suffixes may be used for Kilobytes, Megabytes,

@@ -82,32 +82,39 @@ void printHelp(void)
 
 	const optionEntry entries[] =
 	{
-		{ 'b', "Block size used for IO functions (must be a power of two)", "BYTES" },
-		{ 'd', "Dump data in a format that can be digested by pattern processing commands", NULL },
-		{ 'D', "Print time in seconds since epoch", NULL },
-		{ 'h', "Prints usage parameters", NULL },
-		{ 'H', "Omit header row when dumping data", NULL },
-		{ 'n', "Do NOT convert bytes to human readable format", NULL },
-		{ 'o', "Do NOT display results (does not override -d)", NULL },
-		{ 'O', "Reopen worload file before every test", NULL },
-		{ 'p', "Directory where the test file should be created", "PATH "},
-		{ 'r', "Randomize workload file name", NULL },
-		{ 'R', "Try to enable Direct IO", NULL },
-		{ 's', "Workload file size (default: 10Mb)", "BYTES" },
-		{ 'v', "Controls the level of verbosity", NULL},
-		{ 'V', "Displays version number", NULL},
-      { 'x', "Dry-run. Just display parameters and quit", NULL },
+		{ 'b', "Block size for IO operations (must be a power of two)", "BYTES" },
+		{ 'd', "Dump results as semicolon-separated CSV to stdout", NULL },
+		{ 'D', "Print timestamp as seconds since epoch instead of a date string", NULL },
+		{ 'f', "Disable posix_fadvise() cache hints (Linux only)", NULL },
+		{ 'h', "Print usage information and exit", NULL },
+		{ 'H', "Omit the header row when dumping CSV data", NULL },
+		{ 'k', "Keep the workload file on exit instead of removing it", NULL },
+		{ 'n', "Do not convert byte counts to human-readable format", NULL },
+		{ 'o', "Do not display results (does not suppress -d output)", NULL },
+		{ 'O', "Reopen the workload file before every test", NULL },
+		{ 'p', "Directory where the workload file should be created", "PATH" },
+		{ 'r', "Append a random suffix to the workload file name", NULL },
+		{ 'R', "Disable Direct IO (Direct IO is enabled by default)", NULL },
+		{ 's', "Workload file size (default: 10MB)", "BYTES" },
+		{ 'v', "Increase verbosity (repeat for more detail: -vvv)", NULL },
+		{ 'V', "Print version number and exit", NULL },
+		{ 'w', "Append CSV output to FILE instead of stdout (implies -d)", "FILE" },
+		{ 'x', "Dry run: display parameters and exit without running tests", NULL },
 		{ 0 }
 	};
 
-	printf("IOMELT Version %s\nUsage:\n", versionNumber);
-	for(i = 0; entries[i].option != 0; i++)
+	printf("IOMELT Version %s\n", versionNumber);
+	printf("Usage: iomelt [OPTIONS] [-b BYTES] [-s BYTES] [-p PATH] [-w FILE]\n\n");
+	for (i = 0; entries[i].option != 0; i++)
 	{
-		printf("\t-%c %s\t%s\n", entries[i].option, entries[i].unit == NULL ? "\t" : entries[i].unit, entries[i].description);
+		printf("  -%c %-6s  %s\n",
+			entries[i].option,
+			entries[i].unit ? entries[i].unit : "",
+			entries[i].description);
 	}
 	printf("\n");
-	printf("\t-b and -s values can be specified in bytes (default), Kilobytes (with 'K' suffix), Megabytes (with 'M'suffix), or Gigabytes (with 'G' suffix)\n");
-	printf("\tUnless specified, block size value is the optimal block transfer size for the file system as returned by statvfs\n");
+	printf("  -b and -s accept a unit suffix: K (kilobytes), M (megabytes), G (gigabytes).\n");
+	printf("  If -b is not specified, the optimal block size is obtained from statvfs(3).\n");
 }
 
 /* convert bytes to a human readable format

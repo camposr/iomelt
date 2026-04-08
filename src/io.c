@@ -203,6 +203,12 @@ ioMetrics randomRewrite(int fd, unsigned long int fileSize, int blockSize, char 
 		if (opLatency > maxLat) maxLat = opLatency;
 		sumLat += opLatency;
 	}
+	rc = fsync(fd);
+	if (rc == -1)
+	{
+		myWarn(0, __func__, "Unable to fsync(): %s", strerror(errno));
+	}
+
 	metrics.wallClockTime = getDelta(t);
 	getDeltaUsage(initUsage, &metrics);
 
@@ -319,6 +325,11 @@ ioMetrics randomMixed(int fd, unsigned long int fileSize, int blockSize, char *b
 		if (opLatency < minLat) minLat = opLatency;
 		if (opLatency > maxLat) maxLat = opLatency;
 		sumLat += opLatency;
+	}
+	rc = fsync(fd);
+	if (rc == -1)
+	{
+		myWarn(0, __func__, "Unable to fsync(): %s", strerror(errno));
 	}
 
 	metrics.wallClockTime = getDelta(t);

@@ -41,16 +41,18 @@ As of April 2026, version 1.2 supports the following command line options:
 	-D		Print time in seconds since epoch
 	-f		Disable posix_fadvise() cache hints (Linux only)
 	-h		Prints usage parameters
+	-k		Keep the workload file on exit instead of removing it
 	-H		Omit header row when dumping data
 	-n		Do NOT convert bytes to human readable format
 	-o		Do NOT display results (does not override -d)
 	-O		Reopen workload file before every test
 	-p PATH		Directory where the test file should be created
 	-r		Randomize workload file name
-	-R		Try to enable Direct IO
+	-R		Disable Direct IO (Direct IO is enabled by default)
 	-s BYTES	Workload file size (default: 10MB)
 	-v		Controls the level of verbosity
 	-V		Displays version number
+	-w FILE		Append CSV output to FILE instead of stdout (implies -d)
 
 Block size and file size (-b and -s options) are in bytes (default), Kilobytes ('K' suffix),
 Megabytes ('M' suffix), or Gigabytes ('G' suffix).

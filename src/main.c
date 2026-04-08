@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 	char humanBytes[256];
 	char fileSizeHuman[256];
 	bool randomFileName = false;
-	bool directIO = false;
+	bool directIO = true;
    #ifndef __APPLE__
 	   bool fadvise = true;
    #endif
@@ -82,6 +82,11 @@ int main(int argc, char **argv)
 	struct stat st;
    /* is this a dry-run? */
    bool isDryRun = false;
+	/* optional CSV output file (-w); empty string means write to stdout */
+	char csvFileName[256] = "";
+	FILE *csvOut = NULL;
+	/* keep the workload file on exit instead of removing it */
+	bool keepFile = false;
 
 
 
@@ -101,7 +106,7 @@ int main(int argc, char **argv)
 	srandom((unsigned int)(time(NULL)/getpid()));
 
 	/* parse command line options */
-	while ((rc = getopt(argc, argv, "fdDvVhHnoOrRxs:b:p:")) != -1)
+	while ((rc = getopt(argc, argv, "fdDvVhHknoOrRxs:b:p:w:")) != -1)
 	{
 		switch(rc)
 		{
@@ -130,7 +135,7 @@ int main(int argc, char **argv)
 				break;
 			case 'b':
 				blockSize = (int)parseFileSize(optarg);
-				if (blockSize == 0)
+				if (blockSize <= 0)
 				{
 					myWarn(0,__func__,"Block size must be a positive integer");
 					printHelp();
@@ -183,8 +188,8 @@ int main(int argc, char **argv)
 					
 				break;
 			case 'R':
-				myWarn(2,__func__,"Will try to enable Direct IO");
-				directIO = true;
+				myWarn(2,__func__,"Direct IO disabled by user");
+				directIO = false;
 				break;
 			case 'V':
 				printf("IOMELT Version %s\n",versionNumber);
@@ -197,6 +202,13 @@ int main(int argc, char **argv)
 				isDryRun = true;
 				myWarn(2,__func__,"Dry-run flag set. Files will be opened but almost no operations will happen");
 				break;
+			case 'k':
+				keepFile = true;
+				break;
+			case 'w':
+				snprintf(csvFileName, sizeof(csvFileName), "%s", optarg);
+				dump = true;
+				break;
 			default:
 				printHelp();
 				exit(EXIT_FAILURE);
@@ -204,6 +216,24 @@ int main(int argc, char **argv)
 	}
 
 	myWarn(2,__func__,"Verbose level is %d", verbose);
+
+	/* open CSV output file if -w was specified */
+	if (csvFileName[0] != '\0')
+	{
+		/* suppress header automatically if the file already has content */
+		if (stat(csvFileName, &st) == 0 && st.st_size > 0)
+		{
+			myWarn(2, __func__, "CSV file '%s' exists and has content, suppressing header", csvFileName);
+			showHeader = false;
+		}
+		csvOut = fopen(csvFileName, "a");
+		if (csvOut == NULL)
+		{
+			myWarn(0, __func__, "Unable to open CSV output file '%s': %s", csvFileName, strerror(errno));
+			exit(EXIT_FAILURE);
+		}
+		myWarn(2, __func__, "CSV output will be appended to '%s'", csvFileName);
+	}
 
 	/* 	if the user didn't specify a block size iomelt will try to figure out the
 		optimal block size for the file system by using statfs */
@@ -245,6 +275,10 @@ int main(int argc, char **argv)
 			printf("Device:  Unknown (unable to query drive info)\n\n");
 		}
 	}
+
+	if (output == true && directIO == false)
+		printf("Note: Direct IO is disabled (-R); results may reflect page cache performance\n"
+		       "      rather than true device-level throughput and latency.\n\n");
 
 	/* Convert file size to a human readable format */
 	bytesToHuman(fileSizeHuman, fileSize);
@@ -304,7 +338,22 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	(void)memset(buf, 0, blockSize);
+	/* fill buffer with random data to prevent SSD firmware compression
+	   from inflating throughput numbers */
+	{
+		int ufd = open("/dev/urandom", O_RDONLY);
+		if (ufd == -1)
+		{
+			myWarn(1, __func__, "Unable to open /dev/urandom, buffer will be zero-filled: %s", strerror(errno));
+			memset(buf, 0, blockSize);
+		}
+		else
+		{
+			if (read(ufd, buf, blockSize) != blockSize)
+				myWarn(1, __func__, "Short read from /dev/urandom, buffer may be partially zero-filled");
+			close(ufd);
+		}
+	}
 
 	if (output == true)
 		printf("Serial write test - File size: %s - Block size: %d%s\n",
@@ -403,7 +452,6 @@ int main(int argc, char **argv)
 	if (output == true)
 		printf("\nRandom rewrite test - File size: %s - Block size: %d%s\n",
 			fileSizeHuman, blockSize, isDryRun ? " (dry run - skipped)" : "");
-	memset(buf,1,blockSize);
 
 	/************************/
 	/*   Random Rewrite     */
@@ -497,8 +545,6 @@ int main(int argc, char **argv)
    if (rc == -1) perror("main() - [__APPLE__] fcntl F_RDAHEAD error");
     #endif
 
-	memset(buf,2,blockSize);
-
 	/************************/
 	/*   Random Mixed       */
 	/************************/
@@ -558,36 +604,45 @@ int main(int argc, char **argv)
 	/* Dump data in a format that can be digested by R and awk */
 	if (dump == true && isDryRun == false)
 	{
+		FILE *out = (csvOut != NULL) ? csvOut : stdout;
+
 		if (showHeader == true)
-			printf("#Date;Hostname;Test;File Size;Block Size;Total Time;Calls per second;Bytes per second;Min Latency;Avg Latency;Max Latency\n");
+			fprintf(out, "#Date;Hostname;Test;File Size;Block Size;Total Time;Calls per second;Bytes per second;Min Latency;Avg Latency;Max Latency\n");
 
 		for (i=0;i<NUM_TESTS;i++)
 		{
-			printf("%s;%s;%s;%lu;%d;%f;%f;%f;%.2f;%.2f;%.2f\n", 
-				humanTime, hostName, metrics[i].testName, 
+			fprintf(out, "%s;%s;%s;%lu;%d;%f;%f;%f;%.2f;%.2f;%.2f\n",
+				humanTime, hostName, metrics[i].testName,
 				fileSize, blockSize, metrics[i].wallClockTime,
 				(fileSize / blockSize) / metrics[i].wallClockTime,
-				fileSize / metrics[i].wallClockTime, 
-            metrics[i].minLatency * 1e6, 
-            metrics[i].avgLatency * 1e6,
-            metrics[i].maxLatency * 1e6);
+				fileSize / metrics[i].wallClockTime,
+				metrics[i].minLatency * 1e6,
+				metrics[i].avgLatency * 1e6,
+				metrics[i].maxLatency * 1e6);
 		}
+
+		if (csvOut != NULL)
+			fclose(csvOut);
 	}
 
 
 
 	/* clean up before we leave */
 	free(buf);
-	rc = unlink(fileName);
-	if (rc != 0)
+	if (keepFile == true)
 	{
-		perror("Unable to unlink workload file");
-		exit(EXIT_FAILURE);
+		myWarn(2, __func__, "Keeping workload file '%s'", fileName);
 	}
-   else
-   {
-      myWarn(3, __func__, "Successfully removed workload file %s", fileName);
-   }
+	else
+	{
+		rc = unlink(fileName);
+		if (rc != 0)
+		{
+			perror("Unable to unlink workload file");
+			exit(EXIT_FAILURE);
+		}
+		myWarn(3, __func__, "Successfully removed workload file %s", fileName);
+	}
 
 return(0);
 }

@@ -1,4 +1,4 @@
-IOMELT - Rodrigo Albani de Campos (camposr<at>gmail<dot>com)
+IOMELT - Rodrigo Campos (camposr@protonmail.com)
 
 * What is iomelt?
 IOMELT is a benchmark tool for storage devices.
